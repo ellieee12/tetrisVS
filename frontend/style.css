@@ -1,0 +1,17 @@
+.tetris {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  color: #ecebe8;
+  font-family: system-ui, sans-serif;
+}
+canvas { border-radius: 6px; background: #262930; max-width: 100%; height: auto; display: block; }
+aside { width: 170px; display: flex; flex-direction: column; gap: 12px; }
+.box { background: #262930; border-radius: 6px; padding: 10px 12px; }
+.box small { display: block; color: #9a9ca3; }
+.box b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.box canvas { margin-top: 6px; background: transparent; }
+.keys { color: #9a9ca3; font-size: .85rem; margin: 0; }
