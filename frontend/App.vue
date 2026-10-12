@@ -27,7 +27,7 @@ const BASE_DROP_MS = 800;
 const MIN_DROP_MS = 80;
 const LEVEL_SPEEDUP = 0.85;
 const LINES_PER_LEVEL = 10;
-const LINE_SCORES = [0, 100, 300, 500, 800];
+const LINE_SCORES = [100, 300, 500, 800];
 const PIECES = {
   I: { color: "#4cc3d9", shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
   O: { color: "#e8c547", shape: [[1,1],[1,1]] },
@@ -83,7 +83,7 @@ function lock() {
   const cleared = HEIGHT - board.length;
   while (board.length < HEIGHT) board.unshift(Array(WIDTH).fill(null));
   if (cleared) {
-    score.value += LINE_SCORES[cleared] * level.value;
+    score.value += LINE_SCORES[cleared - 1] * level.value;
     lines.value += cleared;
     level.value = 1 + Math.floor(lines.value / LINES_PER_LEVEL);
   }
@@ -118,8 +118,10 @@ function draw() {
 
 function drawNext() {
   const { color, shape } = PIECES[nextType];
+  const cells = cellsOf({ shape, x: 0, y: 0 });
+  const off = k => (3 - Math.max(...cells.map(c => c[k])) - Math.min(...cells.map(c => c[k]))) / 2;
   nctx.clearRect(0, 0, NEXT_UNITS * 4, NEXT_UNITS * 4);
-  shape.forEach((row, r) => row.forEach((v, c) => v && drawCell(nctx, c, r, color, NEXT_UNITS)));
+  cells.forEach(({ x, y }) => drawCell(nctx, x + off("x"), y + off("y"), color, NEXT_UNITS));
 }
 
 /* game loop & input */
@@ -131,12 +133,13 @@ function tick() {
 }
 
 function onKey(e) {
-  if (over || !e.key.startsWith("Arrow")) return;
+  if (over || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key)) return;
   e.preventDefault();
   if (e.key === "ArrowLeft") tryMove(-1, 0);
   else if (e.key === "ArrowRight") tryMove(1, 0);
   else if (e.key === "ArrowUp") tryRotate();
-  else if (e.key === "ArrowDown") { while (tryMove(0, 1)); lock(); }
+  else if (e.key === "ArrowDown") tryMove(0, 1);
+  else if (e.key === " ") { while (tryMove(0, 1)); lock(); }
   draw();
 }
 
