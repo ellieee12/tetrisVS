@@ -11,8 +11,6 @@
         <small>Next</small>
         <canvas ref="nextRef" :width="NEXT_SIZE * 4" :height="NEXT_SIZE * 4"></canvas>
       </div>
-
-      <p class="keys">← / → move · ↑ rotate · ↓ drop</p>
     </aside>
   </div>
 </template>
@@ -21,17 +19,17 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 
 /* ============ CONFIG: edit these ============ */
-const UNITS = 30;            // pixel size of one cell
-const WIDTH = 10;            // columns (minimum 4 so the I piece fits)
-const HEIGHT = 20;           // rows
-const BASE_DROP_MS = 800;    // time between automatic drops at level 1
-const MIN_DROP_MS = 80;      // fastest possible drop interval
-const LEVEL_SPEEDUP = 0.85;  // drop interval multiplied by this each level
+const UNITS = 30;
+const WIDTH = 10;
+const HEIGHT = 20;
+const BASE_DROP_MS = 800;
+const MIN_DROP_MS = 80;
+const LEVEL_SPEEDUP = 0.85;
 const LINES_PER_LEVEL = 10;
-const LINE_SCORES = [0, 100, 300, 500, 800]; // points for 0..4 lines (times level)
-const NEXT_SIZE = 24;        // cell size in the "next" preview
+const LINE_SCORES = [0, 100, 300, 500, 800];
+const NEXT_SIZE = 24;
 const COLORS = { bg: "#262930", grid: "#2e3139", text: "#ffffff" };
-const PIECES = {             // 1 = filled cell; add your own shapes here
+const PIECES = {
   I: { color: "#4cc3d9", shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
   O: { color: "#e8c547", shape: [[1,1],[1,1]] },
   T: { color: "#a56bd1", shape: [[0,1,0],[1,1,1],[0,0,0]] },
@@ -42,7 +40,6 @@ const PIECES = {             // 1 = filled cell; add your own shapes here
 };
 /* ============================================ */
 
-// Reactive state (shown in the template)
 const score = ref(0);
 const lines = ref(0);
 const level = ref(1);
