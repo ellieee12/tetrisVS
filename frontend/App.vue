@@ -198,22 +198,19 @@ function step(now) {
 }
 
 /* ---------- input ---------- */
-function press(key) {
+function press(e) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
   if (over) return;
-  if (key === "ArrowLeft") tryMove(-1, 0);
-  else if (key === "ArrowRight") tryMove(1, 0);
-  else if (key === "ArrowUp") tryRotate();
-  else if (key === "ArrowDown") hardDrop();
+  if (e.key === "ArrowLeft") tryMove(-1, 0);
+  else if (e.key === "ArrowRight") tryMove(1, 0);
+  else if (e.key === "ArrowUp") tryRotate();
+  else if (e.key === "ArrowDown") hardDrop();
 }
 
-function onKeyDown(e) {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
-  press(e.key);
-}
 onMounted(() => {
   ctx = canvasRef.value.getContext("2d");
   nctx = nextRef.value.getContext("2d");
-  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keydown", press);
   reset();
   frameId = requestAnimationFrame(step);
 });
