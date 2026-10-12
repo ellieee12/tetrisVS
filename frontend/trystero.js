@@ -1,0 +1,1 @@
+import {joinRoom} from 'trystero';
