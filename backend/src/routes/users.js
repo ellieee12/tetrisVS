@@ -2,8 +2,12 @@ import express from 'express';
 import jwt from 'jsonwebtoken'; 
 import prisma from '../db/prisma.js';
 import pick from '../utils/pick.js'
+import requireAuth from '../middlewares/auth.js';
+import cookieParser from 'cookie-parser';
 
 const router = express.Router();
+router.use(cookieParser());
+router.use(requireAuth);
 
 const ALLOWED_FIELDS = ['pseudo','pwd','nb_played_games','nb_win','best_score']
 

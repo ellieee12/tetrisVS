@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 
 function requireAuth(req,res,next){
     try{
+        console.log(req.cookies)
         const token = req.cookies?.token;
         if (!token){
             res.status(401).json({
