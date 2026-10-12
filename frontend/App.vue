@@ -29,8 +29,6 @@ const MIN_DROP_MS = 80;      // fastest possible drop interval
 const LEVEL_SPEEDUP = 0.85;  // drop interval multiplied by this each level
 const LINES_PER_LEVEL = 10;
 const LINE_SCORES = [0, 100, 300, 500, 800]; // points for 0..4 lines (times level)
-const SHOW_GHOST = true;
-const SHOW_GRID = true;
 const NEXT_SIZE = 24;        // cell size in the "next" preview
 const COLORS = { bg: "#262930", grid: "#2e3139", text: "#ffffff" };
 const PIECES = {             // 1 = filled cell; add your own shapes here
@@ -128,8 +126,7 @@ function hardDrop() {
   lock();
 }
 
-const dropInterval = () =>
-  Math.max(MIN_DROP_MS, BASE_DROP_MS * Math.pow(LEVEL_SPEEDUP, level.value - 1));
+const dropInterval = () => Math.max(MIN_DROP_MS, BASE_DROP_MS * Math.pow(LEVEL_SPEEDUP, level.value - 1));
 
 /* ---------- drawing ---------- */
 function drawCell(c, x, y, color, size, alpha = 1) {
@@ -144,24 +141,20 @@ function draw() {
   ctx.fillStyle = COLORS.bg;
   ctx.fillRect(0, 0, w, h);
 
-  if (SHOW_GRID) {
-    ctx.strokeStyle = COLORS.grid;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 1; x < WIDTH; x++) { ctx.moveTo(x * UNITS + .5, 0); ctx.lineTo(x * UNITS + .5, h); }
-    for (let y = 1; y < HEIGHT; y++) { ctx.moveTo(0, y * UNITS + .5); ctx.lineTo(w, y * UNITS + .5); }
-    ctx.stroke();
-  }
+   ctx.strokeStyle = COLORS.grid;
+   ctx.lineWidth = 1;
+   ctx.beginPath();
+   for (let x = 1; x < WIDTH; x++) { ctx.moveTo(x * UNITS + .5, 0); ctx.lineTo(x * UNITS + .5, h); }
+   for (let y = 1; y < HEIGHT; y++) { ctx.moveTo(0, y * UNITS + .5); ctx.lineTo(w, y * UNITS + .5); }
+   ctx.stroke();
 
   board.forEach((row, y) => row.forEach((color, x) => color && drawCell(ctx, x, y, color, UNITS)));
 
   if (!over) {
-    if (SHOW_GHOST) {
-      const ghost = { ...piece };
-      while (isValid({ ...ghost, y: ghost.y + 1 })) ghost.y++;
-      cellsOf(ghost).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS, .25));
-    }
-    cellsOf(piece).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS));
+   const ghost = { ...piece };
+   while (isValid({ ...ghost, y: ghost.y + 1 })) ghost.y++;
+   cellsOf(ghost).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS, .25));
+   cellsOf(piece).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS));
   }
 
   if (over) {
