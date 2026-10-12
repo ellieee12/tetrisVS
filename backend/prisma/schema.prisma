@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model tetris_user {
+  user_id         Int    @id @default(autoincrement())
+  pseudo          String @unique
+  pwd             String
+  nb_played_games Int?
+  nb_win          Int?
+  best_score      Int?
+}
