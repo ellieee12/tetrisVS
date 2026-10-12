@@ -6,4 +6,7 @@ export const room = joinRoom(
   roomId
 )
 
+
+
+
 export{selfId,roomId}
