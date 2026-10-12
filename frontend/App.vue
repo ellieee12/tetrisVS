@@ -9,7 +9,7 @@
       <div class="box"><small>Level</small><b>{{ level }}</b></div>
       <div class="box">
         <small>Next</small>
-        <canvas ref="nextRef" :width="NEXT_SIZE * 4" :height="NEXT_SIZE * 4"></canvas>
+        <canvas ref="nextRef" :width="NEXT_UNITS * 4" :height="NEXT_UNITS * 4"></canvas>
       </div>
     </aside>
   </div>
@@ -123,13 +123,11 @@ function drawNext() {
 }
 
 /* game loop & input */
-const interval = () => Math.max(MIN_DROP_MS, BASE_DROP_MS * LEVEL_SPEEDUP ** (level.value - 1));
-
 function tick() {
   if (over) return;
   if (!tryMove(0, 1)) lock();
   draw();
-  if (!over) timer = setTimeout(tick, interval());
+  if (!over) timer = setTimeout(tick, Math.max(MIN_DROP_MS, BASE_DROP_MS * LEVEL_SPEEDUP ** (level.value - 1)));
 }
 
 function onKey(e) {
@@ -143,8 +141,8 @@ function onKey(e) {
 }
 
 onMounted(() => {
-  ctx = canvasRef.value.getContext("2d");
-  nctx = nextRef.value.getContext("2d");
+  ctx = canvasRef.value.getContext("2d", {alpha: false});
+  nctx = nextRef.value.getContext("2d", {alpha: false});
   window.addEventListener("keydown", onKey);
   spawn();
   tick();
