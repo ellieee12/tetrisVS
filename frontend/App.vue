@@ -16,10 +16,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onUpdated, onBeforeUnmount } from "vue";
 
-/* ============ CONFIG: edit these ============ */
+/* congfig */
 const UNITS = 30;
+const NEXT_UNITS = 24;
 const WIDTH = 10;
 const HEIGHT = 20;
 const BASE_DROP_MS = 800;
@@ -27,8 +28,6 @@ const MIN_DROP_MS = 80;
 const LEVEL_SPEEDUP = 0.85;
 const LINES_PER_LEVEL = 10;
 const LINE_SCORES = [0, 100, 300, 500, 800];
-const NEXT_SIZE = 24;
-const COLORS = { bg: "#262930", grid: "#2e3139", text: "#ffffff" };
 const PIECES = {
   I: { color: "#4cc3d9", shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
   O: { color: "#e8c547", shape: [[1,1],[1,1]] },
@@ -38,7 +37,6 @@ const PIECES = {
   J: { color: "#4a72d4", shape: [[1,0,0],[1,1,1],[0,0,0]] },
   L: { color: "#e8913a", shape: [[0,0,1],[1,1,1],[0,0,0]] },
 };
-/* ============================================ */
 
 const score = ref(0);
 const lines = ref(0);
@@ -46,177 +44,116 @@ const level = ref(1);
 const canvasRef = ref(null);
 const nextRef = ref(null);
 
-let ctx, nctx, frameId;
-let board, piece, nextType, bag, over, last, acc;
+const TYPES = Object.keys(PIECES);
+const randomType = () => TYPES[Math.floor(Math.random() * TYPES.length)];
 
-const emptyBoard = () => Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(null));
-const rotateMatrix = m => m[0].map((_, c) => m.map(r => r[c]).reverse());
+let ctx, nctx, timer;
+let board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(null));
+let nextType = randomType();
+let piece;
+let over = false;
 
-const cellsOf = p => {
-  const out = [];
-  p.shape.forEach((row, r) => row.forEach((v, c) => { if (v) out.push({ x: p.x + c, y: p.y + r }); }));
-  return out;
-};
-const isValid = p =>
-  cellsOf(p).every(({ x, y }) => x >= 0 && x < WIDTH && y < HEIGHT && (y < 0 || !board[y][x]));
-
-function nextFromBag() {
-  if (!bag.length) {
-    bag = Object.keys(PIECES);
-    for (let i = bag.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [bag[i], bag[j]] = [bag[j], bag[i]];
-    }
-  }
-  return bag.pop();
-}
-
-function spawn() {
-  const type = nextType;
-  nextType = nextFromBag();
-  const def = PIECES[type];
-  piece = { type, color: def.color, shape: def.shape.map(r => [...r]), x: 0, y: 0 };
-  piece.x = Math.floor((WIDTH - piece.shape[0].length) / 2);
-  if (!isValid(piece)) over = true;
-  drawNext();
-}
+const cellsOf = p => p.shape.flatMap((row, r) => row.flatMap((v, c) => (v ? [{ x: p.x + c, y: p.y + r }] : [])));
+const isValid = p => cellsOf(p).every(({ x, y }) => x >= 0 && x < WIDTH && y < HEIGHT && !board[y][x]);
 
 function tryMove(dx, dy) {
   const next = { ...piece, x: piece.x + dx, y: piece.y + dy };
-  if (isValid(next)) { piece = next; return true; }
-  return false;
+  if (isValid(next)) piece = next;
+  return next === piece;
 }
+
 function tryRotate() {
-  const shape = rotateMatrix(piece.shape);
+  const shape = piece.shape[0].map((_, c) => piece.shape.map(r => r[c]).reverse());
   for (const kick of [0, -1, 1, -2, 2]) {
     const next = { ...piece, shape, x: piece.x + kick };
     if (isValid(next)) { piece = next; return; }
   }
 }
 
+function spawn() {
+  const { color, shape } = PIECES[nextType];
+  piece = { color, shape, x: Math.floor((WIDTH - shape[0].length) / 2), y: 0 };
+  if (!isValid(piece)) over = true;
+  nextType = randomType();
+}
+
 function lock() {
-  cellsOf(piece).forEach(({ x, y }) => { if (y >= 0) board[y][x] = piece.color; });
-  let cleared = 0;
-  for (let y = HEIGHT - 1; y >= 0; y--) {
-    if (board[y].every(Boolean)) {
-      board.splice(y, 1);
-      board.unshift(Array(WIDTH).fill(null));
-      cleared++;
-      y++;
-    }
-  }
+  cellsOf(piece).forEach(({ x, y }) => (board[y][x] = piece.color));
+  board = board.filter(row => !row.every(Boolean));
+  const cleared = HEIGHT - board.length;
+  while (board.length < HEIGHT) board.unshift(Array(WIDTH).fill(null));
   if (cleared) {
-    score.value += (LINE_SCORES[Math.min(cleared, 4)] || 0) * level.value;
+    score.value += LINE_SCORES[cleared] * level.value;
     lines.value += cleared;
     level.value = 1 + Math.floor(lines.value / LINES_PER_LEVEL);
   }
   spawn();
 }
 
-function hardDrop() {
-  let n = 0;
-  while (tryMove(0, 1)) n++;
-  score.value += n * 2;
-  lock();
-}
-
-const dropInterval = () => Math.max(MIN_DROP_MS, BASE_DROP_MS * Math.pow(LEVEL_SPEEDUP, level.value - 1));
-
-/* ---------- drawing ---------- */
-function drawCell(c, x, y, color, size, alpha = 1) {
+/* drawing */
+const drawCell = (c, x, y, color, size, alpha = 1) => {
   c.globalAlpha = alpha;
   c.fillStyle = color;
   c.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
   c.globalAlpha = 1;
-}
+};
 
 function draw() {
-  const w = WIDTH * UNITS, h = HEIGHT * UNITS;
-  ctx.fillStyle = COLORS.bg;
-  ctx.fillRect(0, 0, w, h);
-
-   ctx.strokeStyle = COLORS.grid;
-   ctx.lineWidth = 1;
-   ctx.beginPath();
-   for (let x = 1; x < WIDTH; x++) { ctx.moveTo(x * UNITS + .5, 0); ctx.lineTo(x * UNITS + .5, h); }
-   for (let y = 1; y < HEIGHT; y++) { ctx.moveTo(0, y * UNITS + .5); ctx.lineTo(w, y * UNITS + .5); }
-   ctx.stroke();
-
+  drawNext();
+  ctx.fillStyle = "#262930";
+  ctx.fillRect(0, 0, WIDTH * UNITS, HEIGHT * UNITS);
   board.forEach((row, y) => row.forEach((color, x) => color && drawCell(ctx, x, y, color, UNITS)));
-
-  if (!over) {
-   const ghost = { ...piece };
-   while (isValid({ ...ghost, y: ghost.y + 1 })) ghost.y++;
-   cellsOf(ghost).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS, .25));
-   cellsOf(piece).forEach(({ x, y }) => y >= 0 && drawCell(ctx, x, y, piece.color, UNITS));
-  }
-
   if (over) {
-    ctx.fillStyle = "rgba(0,0,0,.55)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = COLORS.text;
+    ctx.fillStyle = "white";
     ctx.textAlign = "center";
-    ctx.font = `600 ${Math.max(16, UNITS * .9)}px system-ui, sans-serif`;
-    ctx.fillText("Game over", w / 2, h / 2);
+    ctx.font = "bold 28px sans-serif";
+    ctx.fillText("Game over", (WIDTH * UNITS) / 2, (HEIGHT * UNITS) / 2);
+    return;
   }
+  const ghost = { ...piece };
+  while (isValid({ ...ghost, y: ghost.y + 1 })) ghost.y++;
+  cellsOf(ghost).forEach(({ x, y }) => drawCell(ctx, x, y, piece.color, UNITS, 0.25));
+  cellsOf(piece).forEach(({ x, y }) => drawCell(ctx, x, y, piece.color, UNITS));
 }
 
 function drawNext() {
-  nctx.clearRect(0, 0, NEXT_SIZE * 4, NEXT_SIZE * 4);
-  const def = PIECES[nextType];
-  const h = def.shape.length, w = def.shape[0].length;
-  def.shape.forEach((row, r) =>
-    row.forEach((v, c) => v && drawCell(nctx, c + (4 - w) / 2, r + (4 - h) / 2, def.color, NEXT_SIZE)));
+  const { color, shape } = PIECES[nextType];
+  nctx.clearRect(0, 0, NEXT_UNITS * 4, NEXT_UNITS * 4);
+  shape.forEach((row, r) => row.forEach((v, c) => v && drawCell(nctx, c, r, color, NEXT_UNITS)));
 }
 
-/* ---------- game loop ---------- */
-function reset() {
-  board = emptyBoard();
-  bag = [];
-  score.value = 0;
-  lines.value = 0;
-  level.value = 1;
-  over = false;
-  acc = 0;
-  nextType = nextFromBag();
-  spawn();
-}
+/* game loop & input */
+const interval = () => Math.max(MIN_DROP_MS, BASE_DROP_MS * LEVEL_SPEEDUP ** (level.value - 1));
 
-function step(now) {
-  frameId = requestAnimationFrame(step);
-  const dt = now - (last ?? now);
-  last = now;
-  if (!over) {
-    acc += dt;
-    const interval = dropInterval();
-    while (acc >= interval) {
-      acc -= interval;
-      if (!tryMove(0, 1)) { lock(); break; }
-    }
-  }
-  draw();
-}
-
-/* ---------- input ---------- */
-function press(e) {
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+function tick() {
   if (over) return;
+  if (!tryMove(0, 1)) lock();
+  draw();
+  if (!over) timer = setTimeout(tick, interval());
+}
+
+function onKey(e) {
+  if (over || !e.key.startsWith("Arrow")) return;
+  e.preventDefault();
   if (e.key === "ArrowLeft") tryMove(-1, 0);
   else if (e.key === "ArrowRight") tryMove(1, 0);
   else if (e.key === "ArrowUp") tryRotate();
-  else if (e.key === "ArrowDown") hardDrop();
+  else if (e.key === "ArrowDown") { while (tryMove(0, 1)); lock(); }
+  draw();
 }
 
 onMounted(() => {
   ctx = canvasRef.value.getContext("2d");
   nctx = nextRef.value.getContext("2d");
-  window.addEventListener("keydown", press);
-  reset();
-  frameId = requestAnimationFrame(step);
+  window.addEventListener("keydown", onKey);
+  spawn();
+  tick();
 });
 
+onUpdated(draw);
+
 onBeforeUnmount(() => {
-  cancelAnimationFrame(frameId);
-  window.removeEventListener("keydown", onKeyDown);
+  clearTimeout(timer);
+  window.removeEventListener("keydown", onKey);
 });
 </script>
