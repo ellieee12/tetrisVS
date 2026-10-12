@@ -49,13 +49,11 @@ const level = ref(1);
 const canvasRef = ref(null);
 const nextRef = ref(null);
 
-// Game state (not reactive: redrawn every frame on the canvas)
-// board[row][col], row 0 is the top. null = empty, otherwise a color. Locked cells only.
 let ctx, nctx, frameId;
 let board, piece, nextType, bag, over, last, acc;
 
 const emptyBoard = () => Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(null));
-const rotateMatrix = m => m[0].map((_, c) => m.map(r => r[c]).reverse()); // clockwise
+const rotateMatrix = m => m[0].map((_, c) => m.map(r => r[c]).reverse());
 
 const cellsOf = p => {
   const out = [];
@@ -65,7 +63,7 @@ const cellsOf = p => {
 const isValid = p =>
   cellsOf(p).every(({ x, y }) => x >= 0 && x < WIDTH && y < HEIGHT && (y < 0 || !board[y][x]));
 
-function nextFromBag() { // 7-bag randomizer: every piece appears before any repeats
+function nextFromBag() {
   if (!bag.length) {
     bag = Object.keys(PIECES);
     for (let i = bag.length - 1; i > 0; i--) {
@@ -86,7 +84,6 @@ function spawn() {
   drawNext();
 }
 
-// "build a candidate, validate it, keep it if valid"
 function tryMove(dx, dy) {
   const next = { ...piece, x: piece.x + dx, y: piece.y + dy };
   if (isValid(next)) { piece = next; return true; }
@@ -94,7 +91,7 @@ function tryMove(dx, dy) {
 }
 function tryRotate() {
   const shape = rotateMatrix(piece.shape);
-  for (const kick of [0, -1, 1, -2, 2]) { // simple wall kicks
+  for (const kick of [0, -1, 1, -2, 2]) {
     const next = { ...piece, shape, x: piece.x + kick };
     if (isValid(next)) { piece = next; return; }
   }
@@ -108,7 +105,7 @@ function lock() {
       board.splice(y, 1);
       board.unshift(Array(WIDTH).fill(null));
       cleared++;
-      y++; // re-check the same index after shifting
+      y++;
     }
   }
   if (cleared) {
@@ -193,7 +190,7 @@ function step(now) {
   const dt = now - (last ?? now);
   last = now;
   if (!over) {
-    acc += dt; // time-based gravity: same speed on any monitor refresh rate
+    acc += dt;
     const interval = dropInterval();
     while (acc >= interval) {
       acc -= interval;
@@ -224,7 +221,6 @@ onMounted(() => {
   frameId = requestAnimationFrame(step);
 });
 
-// Clean up so the loop and listeners don't keep running after the component is gone
 onBeforeUnmount(() => {
   cancelAnimationFrame(frameId);
   window.removeEventListener("keydown", onKeyDown);
