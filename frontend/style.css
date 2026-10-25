@@ -7,15 +7,16 @@
   color: #ecebe8;
   font-family: system-ui, sans-serif;
 }
-canvas {
+canvas, img {
   border-radius: 6px;
-  max-width: 100%;
   height: auto;
+  min-width: fit-content;
 }
 aside {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: min-content;
 }
 .box {
   background: #262930;

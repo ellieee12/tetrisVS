@@ -1,22 +1,34 @@
 <!-- src/App.vue -->
+<!--
+░▀█▀░█▀▀░▀█▀░█▀▄░▀█▀░█▀▀░░░█░█░█▀▀
+░░█░░█▀▀░░█░░█▀▄░░█░░▀▀█░░░▀▄▀░▀▀█
+░░▀░░▀▀▀░░▀░░▀░▀░▀▀▀░▀▀▀░░░░▀░░▀▀▀ :P
+-->
 <template>
   <div class="tetris">
     <canvas ref="canvasRef" :width="WIDTH * UNITS" :height="HEIGHT * UNITS"></canvas>
 
     <aside>
-      <div class="box"><small>Score</small><b>{{ score }}</b></div>
-      <div class="box"><small>Lines</small><b>{{ lines }}</b></div>
-      <div class="box"><small>Level</small><b>{{ level }}</b></div>
+      <div class="box"><small>Score</small><b>{{score}}</b></div>
+      <div class="box"><small>Lines</small><b>{{lines}}</b></div>
+      <div class="box"><small>Level</small><b>{{level}}</b></div>
       <div class="box">
         <small>Next</small>
         <canvas ref="nextRef" :width="NEXT_UNITS * 4" :height="NEXT_UNITS * 4"></canvas>
       </div>
+      <button @click="solo">Play solo</button>
+      <input v-model="code" placeholder="room code" size="1">
+      <button @click="join">Join room</button>
+      <div>{{status}}</div>
     </aside>
+
+    <img v-if="oppImg" :src="oppImg" :width="WIDTH * UNITS" :height="HEIGHT * UNITS">
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUpdated, onBeforeUnmount } from "vue";
+import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";
+import {joinRoom} from "trystero";
 
 /* congfig */
 const UNITS = 30;
@@ -29,13 +41,13 @@ const LEVEL_SPEEDUP = 0.85;
 const LINES_PER_LEVEL = 10;
 const LINE_SCORES = [100, 300, 500, 800];
 const PIECES = {
-  I: { color: "#4cc3d9", shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]] },
-  O: { color: "#e8c547", shape: [[1,1],[1,1]] },
-  T: { color: "#a56bd1", shape: [[0,1,0],[1,1,1],[0,0,0]] },
-  S: { color: "#5cb85c", shape: [[0,1,1],[1,1,0],[0,0,0]] },
-  Z: { color: "#e2574c", shape: [[1,1,0],[0,1,1],[0,0,0]] },
-  J: { color: "#4a72d4", shape: [[1,0,0],[1,1,1],[0,0,0]] },
-  L: { color: "#e8913a", shape: [[0,0,1],[1,1,1],[0,0,0]] },
+  I: {color: "#4cc3d9", shape: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]]},
+  O: {color: "#e8c547", shape: [[1,1],[1,1]]},
+  T: {color: "#a56bd1", shape: [[0,1,0],[1,1,1],[0,0,0]]},
+  S: {color: "#5cb85c", shape: [[0,1,1],[1,1,0],[0,0,0]]},
+  Z: {color: "#e2574c", shape: [[1,1,0],[0,1,1],[0,0,0]]},
+  J: {color: "#4a72d4", shape: [[1,0,0],[1,1,1],[0,0,0]]},
+  L: {color: "#e8913a", shape: [[0,0,1],[1,1,1],[0,0,0]]},
 };
 
 const score = ref(0);
@@ -48,16 +60,16 @@ const TYPES = Object.keys(PIECES);
 const randomType = () => TYPES[Math.floor(Math.random() * TYPES.length)];
 
 let ctx, nctx, timer;
-let board = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(null));
+let board = Array.from({length: HEIGHT}, () => Array(WIDTH).fill(null));
 let nextType = randomType();
 let piece;
-let over = false;
+let over = "";
 
-const cellsOf = p => p.shape.flatMap((row, r) => row.flatMap((v, c) => (v ? [{ x: p.x + c, y: p.y + r }] : [])));
-const isValid = p => cellsOf(p).every(({ x, y }) => x >= 0 && x < WIDTH && y < HEIGHT && !board[y][x]);
+const cellsOf = p => p.shape.flatMap((row, r) => row.flatMap((v, c) => (v ? [{x: p.x + c, y: p.y + r}] : [])));
+const isValid = p => cellsOf(p).every(({x, y}) => x >= 0 && x < WIDTH && y < HEIGHT && !board[y][x]);
 
 function tryMove(dx, dy) {
-  const next = { ...piece, x: piece.x + dx, y: piece.y + dy };
+  const next = {...piece, x: piece.x + dx, y: piece.y + dy};
   if (isValid(next)) piece = next;
   return next === piece;
 }
@@ -65,20 +77,20 @@ function tryMove(dx, dy) {
 function tryRotate() {
   const shape = piece.shape[0].map((_, c) => piece.shape.map(r => r[c]).reverse());
   for (const kick of [0, -1, 1, -2, 2]) {
-    const next = { ...piece, shape, x: piece.x + kick };
-    if (isValid(next)) { piece = next; return; }
+    const next = {...piece, shape, x: piece.x + kick};
+    if (isValid(next)) {piece = next; return;}
   }
 }
 
 function spawn() {
-  const { color, shape } = PIECES[nextType];
-  piece = { color, shape, x: Math.floor((WIDTH - shape[0].length) / 2), y: 0 };
-  if (!isValid(piece)) over = true;
+  const {color, shape} = PIECES[nextType];
+  piece = {color, shape, x: Math.floor((WIDTH - shape[0].length) / 2), y: 0};
+  if (!isValid(piece)) over = "Game over";
   nextType = randomType();
 }
 
 function lock() {
-  cellsOf(piece).forEach(({ x, y }) => (board[y][x] = piece.color));
+  cellsOf(piece).forEach(({x, y}) => (board[y][x] = piece.color));
   board = board.filter(row => !row.every(Boolean));
   const cleared = HEIGHT - board.length;
   while (board.length < HEIGHT) board.unshift(Array(WIDTH).fill(null));
@@ -107,48 +119,49 @@ function draw() {
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.font = "bold 28px sans-serif";
-    ctx.fillText("Game over", (WIDTH * UNITS) / 2, (HEIGHT * UNITS) / 2);
+    ctx.fillText(over, (WIDTH * UNITS) / 2, (HEIGHT * UNITS) / 2);
     return;
   }
-  const ghost = { ...piece };
-  while (isValid({ ...ghost, y: ghost.y + 1 })) ghost.y++;
-  cellsOf(ghost).forEach(({ x, y }) => drawCell(ctx, x, y, piece.color, UNITS, 0.25));
-  cellsOf(piece).forEach(({ x, y }) => drawCell(ctx, x, y, piece.color, UNITS));
+  if (!piece) return;
+  const ghost = {...piece};
+  while (isValid({...ghost, y: ghost.y + 1})) ghost.y++;
+  cellsOf(ghost).forEach(({x, y}) => drawCell(ctx, x, y, piece.color, UNITS, 0.25));
+  cellsOf(piece).forEach(({x, y}) => drawCell(ctx, x, y, piece.color, UNITS));
 }
 
 function drawNext() {
-  const { color, shape } = PIECES[nextType];
-  const cells = cellsOf({ shape, x: 0, y: 0 });
+  const {color, shape} = PIECES[nextType];
+  const cells = cellsOf({shape, x: 0, y: 0});
   const off = k => (3 - Math.max(...cells.map(c => c[k])) - Math.min(...cells.map(c => c[k]))) / 2;
   nctx.clearRect(0, 0, NEXT_UNITS * 4, NEXT_UNITS * 4);
-  cells.forEach(({ x, y }) => drawCell(nctx, x + off("x"), y + off("y"), color, NEXT_UNITS));
+  cells.forEach(({x, y}) => drawCell(nctx, x + off("x"), y + off("y"), color, NEXT_UNITS));
 }
 
 /* game loop & input */
 function tick() {
   if (over) return;
   if (!tryMove(0, 1)) lock();
-  draw();
+  sync();
   if (!over) timer = setTimeout(tick, Math.max(MIN_DROP_MS, BASE_DROP_MS * LEVEL_SPEEDUP ** (level.value - 1)));
 }
 
 function onKey(e) {
-  if (over || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key)) return;
+  if (e.target.tagName === "INPUT") return;
+  e.target.blur();
+  if (over || !piece || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key)) return;
   e.preventDefault();
   if (e.key === "ArrowLeft") tryMove(-1, 0);
   else if (e.key === "ArrowRight") tryMove(1, 0);
   else if (e.key === "ArrowUp") tryRotate();
   else if (e.key === "ArrowDown") tryMove(0, 1);
-  else if (e.key === " ") { while (tryMove(0, 1)); lock(); }
-  draw();
+  else if (e.key === " ") {while (tryMove(0, 1)); lock();}
+  sync();
 }
 
 onMounted(() => {
   ctx = canvasRef.value.getContext("2d", {alpha: false});
   nctx = nextRef.value.getContext("2d", {alpha: false});
   window.addEventListener("keydown", onKey);
-  spawn();
-  tick();
 });
 
 onUpdated(draw);
@@ -156,5 +169,76 @@ onUpdated(draw);
 onBeforeUnmount(() => {
   clearTimeout(timer);
   window.removeEventListener("keydown", onKey);
+  leave();
 });
+
+function start() {
+  clearTimeout(timer);
+  board.forEach(row => row.fill(null));
+  score.value = lines.value = 0;
+  level.value = 1;
+  over = "";
+  spawn();
+  tick();
+}
+
+let seq = 0; 
+function sync() {
+  draw();
+  const frame = ++seq; //sequence, car sinnon une image ancienne peut arrivé avant une autre
+  canvasRef.value.toBlob(blob => frame === seq && stateAction?.send(blob, {metadata: {over}}), "image/webp", 1); //webp pour éviter de prendre 24mb/s de connexion internet
+}
+
+/* modes */
+const code = ref("");
+const status = ref("Pick a mode");
+const oppImg = ref("");
+let room, stateAction;
+
+function leave() {
+  room?.leave();
+  room = stateAction = null;
+  oppImg.value = "";
+}
+
+function solo() {
+  leave();
+  status.value = "Solo";
+  start();
+}
+
+function join() {
+  leave();
+  const name = code.value.trim() || "default";
+  status.value = `Room "${name}": waiting for an opponent...`;
+
+  let busyUntil = 0;
+  room = joinRoom({appId: "tetris-vs"}, name, {
+    //code compliqué qui empéche un joueur d'essayé de spam rejoin un serveur plein, surchargeant la connexion internet
+    onPeerHandshake: async (_, send, receive) => {
+      const taken = Object.keys(room.getPeers()).length > 0;
+      const busy = Date.now() < busyUntil;
+      if (!taken && !busy) busyUntil = Date.now() + 5000;
+      await send({taken});
+      const {data} = await receive();
+      if (data.taken && !taken) {leave(); status.value = "Room full, try another code";}
+      if (taken || busy || data.taken) throw new Error("room full");
+    },
+  });
+  stateAction = room.makeAction("state");
+
+  room.onPeerJoin = () => {
+    status.value = "Versus: last one standing wins";
+    start();
+  };
+  room.onPeerLeave = () => {
+    status.value = "Opponent left";
+    if (!over) {over = "You win!"; draw();}
+  };
+  stateAction.onMessage = (data, {metadata}) => {
+    URL.revokeObjectURL(oppImg.value);
+    oppImg.value = URL.createObjectURL(new Blob([data], {type: "image/webp"}));
+    if (metadata.over && !over) {over = "You win!"; sync();}
+  };
+}
 </script>
