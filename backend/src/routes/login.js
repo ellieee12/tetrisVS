@@ -1,6 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import prisma from '../db/prisma.js'
+import prisma from '../db/prisma.js';
+import util from "node:util";
+
 const router = express.Router();
 router.get('/',async(req,res)=>{
     const {pseudo,pwd}=req.body;
@@ -22,7 +24,10 @@ router.get('/',async(req,res)=>{
         });
         res.send('Logged in successfully!')
     }catch(err){
-        console.log(err);
+        console.error(
+            "DB error:",
+            util.inspect(err.meta?.driverAdapterError, { depth: null })
+        );
         res.status(500).json({error:'Server error'});
     }
 })

@@ -4,6 +4,8 @@ import { PrismaClient } from '../../generated/prisma/client.ts';
 
 const connectionString = `${process.env.DATABASE_URL}`; //Reads URL from the environment
 if (!connectionString) throw new Error("DATABASE_URL is not set");
+const url = process.env.DATABASE_URL;
+console.log("DATABASE_URL set:", !!url, "length:", url?.length, "starts with:", url?.slice(0, 13));
 //creates adapter and tells it how to connect
 const adapter = new PrismaPg({connectionString});
 //builds client and plugs the adapter in
