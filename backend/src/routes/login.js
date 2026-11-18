@@ -2,25 +2,29 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../db/prisma.js'
 const router = express.Router();
-router.get('/',async(req,res)=>{
+
+router.post('/',async(req,res)=>{
     const {pseudo,pwd}=req.body;
+    //return res.status(501).json({error:`psudo : ${pseudo} pwd ${pwd}`});
     try{
         const user = await prisma.tetris_user.findUnique({
             where:{
                 pseudo:pseudo
             }
         });
+        
         if (!user||user.pwd!==pwd){
-            return res.status(401).json({error:'Invalid credentials'});
+            return res.status(401).json({error:'Invalid user'});
         }
-        const payload = {user_id:55};
+        
+        const payload = {user_id: user.user_id};
         const token = jwt.sign(payload,'MYSECRET',{expiresIn:'1h'});
 
         res.cookie('token',token,{
-            httpOnly:true, //only accessible via HTTP req
-            maxAge:3600*1000 //cookie expiration time (1h)
+            httpOnly:true,
+            maxAge:3600*1000 
         });
-        res.send('Logged in successfully!')
+        return res.json({ user_id: user.user_id });
     }catch(err){
         console.log(err);
         res.status(500).json({error:'Server error'});
