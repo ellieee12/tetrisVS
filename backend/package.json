@@ -25,7 +25,7 @@
   "contributors": [],
   "scripts": {
     "db:reset": "bash ./config/reset-db.sh",
-    "dev": "npm run db:reset && nodemon app.js",
+    "dev": "npm run && nodemon app.js",
     "test": "",
     "postinstall": "prisma generate",
     "build": "prisma generate",
