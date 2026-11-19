@@ -28,7 +28,7 @@
 
 <script setup>
 import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";
-import {joinRoom} from "trystero";
+import {joinRoom} from "@trystero-p2p/ws-relay";
 
 /* congfig */
 const UNITS = 30;
@@ -213,32 +213,30 @@ function join() {
   status.value = `Room "${name}": waiting for an opponent...`;
 
   let busyUntil = 0;
-  room = joinRoom({appId: "tetris-vs"}, name, {
-    //code compliqué qui empéche un joueur d'essayé de spam rejoin un serveur plein, surchargeant la connexion internet
-    onPeerHandshake: async (_, send, receive) => {
-      const taken = Object.keys(room.getPeers()).length > 0;
-      const busy = Date.now() < busyUntil;
-      if (!taken && !busy) busyUntil = Date.now() + 5000;
-      await send({taken});
-      const {data} = await receive();
-      if (data.taken && !taken) {leave(); status.value = "Room full, try another code";}
-      if (taken || busy || data.taken) throw new Error("room full");
-    },
-  });
-  stateAction = room.makeAction("state");
-
-  room.onPeerJoin = () => {
+  room = joinRoom({
+    appId: "tetris-vs",
+    maxUsers: 2,
+    relayConfig: {
+      urls: [
+        `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:5173/relay`
+      ]
+    }
+  }, name);
+  room.onError(err => console.error(err.code, err.message));
+  room.onUserJoin(() => {
     status.value = "Versus: last one standing wins";
     start();
-  };
-  room.onPeerLeave = () => {
+  });
+  room.onUserLeave(() => {
     status.value = "Opponent left";
     if (!over) {over = "You win!"; draw();}
-  };
-  stateAction.onMessage = (data, {metadata}) => {
+  });
+
+  stateAction = room.makeAction("state");
+  stateAction.onMessage((data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
     oppImg.value = URL.createObjectURL(new Blob([data], {type: "image/webp"}));
     if (metadata.over && !over) {over = "You win!"; sync();}
-  };
+  });
 }
 </script>
