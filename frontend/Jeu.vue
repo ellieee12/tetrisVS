@@ -16,9 +16,6 @@
             <input v-model="code" placeholder="room code" size="1">
             <button @click="join">Join room</button>
             <div>{{status}}</div>
-            <div>
-                <button @click="logout"> Log out </button>
-            </div>
         </aside>
 
         <img v-if="oppImg" :src="oppImg" :width="WIDTH * UNITS" :height="HEIGHT * UNITS">
@@ -289,13 +286,5 @@ function saveIfOver() {
     won: over === "You win!",
     score: score.value
   });
-
-  async function logout() {
-    await fetch('https://tetrisvs-api.vercel.app/login', {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-    location.reload();
-  }
 }
 </script>
