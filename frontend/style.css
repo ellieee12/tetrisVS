@@ -33,6 +33,9 @@ aside {
     font-size: 1.5rem;
   }
 }
+#info {
+  color: black;
+}
 
 /* PAGE LOGIN */
 .login {
