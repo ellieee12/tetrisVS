@@ -7,11 +7,10 @@ import cookieParser from 'cookie-parser';
 
 const router = express.Router();
 router.use(cookieParser());
-router.use(requireAuth);
 
 const ALLOWED_FIELDS = ['pseudo','pwd','nb_played_games','nb_win','best_score']
 
-router.get('/',async (req, res)=>{
+router.get('/',requireAuth,async (req, res)=>{
     try{
         const users = await prisma.tetris_user.findMany({
             omit:{pwd:true}
@@ -47,7 +46,7 @@ router.post('/',async(req,res)=>{
     }
 })
 
-router.get('/:id',async(req,res)=>{
+router.get('/:id',requireAuth,async(req,res)=>{
     const id = Number(req.params.id)
     if(!Number.isInteger(id)){
         return res.status(400).json({error:'Invalid user id'})
@@ -67,7 +66,7 @@ router.get('/:id',async(req,res)=>{
     }
 })
 
-router.patch('/:id',async(req,res)=>{
+router.patch('/:id',requireAuth,async(req,res)=>{
     const id = Number(req.params.id)
     if(!Number.isInteger(id)){
         return res.status(400).json({error:'Invalid user id'})
@@ -118,7 +117,7 @@ router.put('/:id',async(req,res)=>{
     }
 })
 
-router.delete('/:id',async (req,res)=>{
+router.delete('/:id',requireAuth,async (req,res)=>{
     const id = Number(req.params.id)
     if(!Number.isInteger(id)){
         return res.status(400).json({error:'Invalid user id'})
@@ -136,12 +135,12 @@ router.delete('/:id',async (req,res)=>{
     }
 })
 
-router.options('/',(req,res)=>{
+router.options('/',requireAuth,(req,res)=>{
     res.set('Allow','GET, POST, OPTIONS');
     return res.sendStatus(204);
 })
 
-router.options('/:id',(req,res)=>{
+router.options('/:id',requireAuth,(req,res)=>{
     res.set('Allow','GET, POST, PUT, PATCH, DELETE, OPTIONS');
     return res.sendStatus(204);
 })
