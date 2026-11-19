@@ -24,7 +24,9 @@ router.post('/',async(req,res)=>{
 
         res.cookie('token',token,{
             httpOnly:true,
-            maxAge:3600*1000 
+            maxAge:3600*1000,
+            secure:true,
+            sameSite:'none'
         });
         return res.json({ user_id: user.user_id });
     }catch(err){

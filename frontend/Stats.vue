@@ -25,7 +25,7 @@ const best_score = ref(0)
 async function showStats() {
   console.log('Stats reçoit user_id =', props.user_id)
   try {
-    const response = await fetch(`https://tetrisvs-api.vercel.app//${props.user_id}`, {
+    const response = await fetch(`https://tetrisvs-api.vercel.app/users/${props.user_id}`, {
       credentials: 'include'
     })
     if (!response.ok) {
@@ -45,7 +45,7 @@ async function updateStats({won, score}) {
   console.log('Stats reçoit user_id =', props.user_id)
   try {
     //On utilise Patch plutot que put car sinon necessite password 
-    const response = await fetch(`https://tetrisvs-api.vercel.app//${props.user_id}`, {
+    const response = await fetch(`https://tetrisvs-api.vercel.app/users/${props.user_id}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
