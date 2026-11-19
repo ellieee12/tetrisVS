@@ -13,4 +13,8 @@ app.use("/login/",login);
 
 app.listen(3000,()=>{
     console.log('Listening on port 3000');
+    const u = new URL(process.env.DATABASE_URL);
+console.log("DB host:", u.hostname, "port:", u.port);
 })
+
+export default app

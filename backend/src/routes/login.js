@@ -1,6 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import prisma from '../db/prisma.js'
+import prisma from '../db/prisma.js';
+import util from "node:util";
+
 const router = express.Router();
 
 router.post('/',async(req,res)=>{
@@ -26,7 +28,10 @@ router.post('/',async(req,res)=>{
         });
         return res.json({ user_id: user.user_id });
     }catch(err){
-        console.log(err);
+        console.error(
+            "DB error:",
+            util.inspect(err.meta?.driverAdapterError, { depth: null })
+        );
         res.status(500).json({error:'Server error'});
     }
 })
