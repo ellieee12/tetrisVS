@@ -10,7 +10,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import Login from './Login.vue'
 import Jeu from './Jeu.vue'
 import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";

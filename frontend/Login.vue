@@ -24,7 +24,7 @@ const emit = defineEmits(['authentified'])
 async function onSubmit(){
     erreur.value = null
     try {
-        const reponse = await fetch('http://localhost:3000/login', {
+        const reponse = await fetch('https://tetrisvs-api.vercel.app/login', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

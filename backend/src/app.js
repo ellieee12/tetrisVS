@@ -2,12 +2,13 @@ import express from 'express';
 import users from './routes/users.js';
 import login from './routes/login.js';
 import cors from 'cors';
-
-import { createServer } from "node:http";
-import { createWsRelayServer } from "@trystero-p2p/ws-relay/server";
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+// app.use(cors({ origin: 'https://tetrisvs-api.vercel.app/', credentials: true }));
+app.use(cors({
+  origin: ['https://tetrisvs-bice.vercel.app'],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use("/users/",users);
