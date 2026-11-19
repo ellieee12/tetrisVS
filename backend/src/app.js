@@ -6,7 +6,7 @@ const app = express();
 
 // app.use(cors({ origin: 'https://tetrisvs-api.vercel.app/', credentials: true }));
 app.use(cors({
-  origin: ['https://tetrisvs-bice.vercel.app'],
+  origin: ['https://tetrisvs-bice.vercel.app', 'http://localhost:5173/'],
   credentials: true
 }));
 
