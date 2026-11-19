@@ -55,7 +55,7 @@ async function onSubmit(){
             emit('authentified', data.user_id)
         } else {
             console.log('status :', reponse.status)
-            if (response.status == 401){
+            if (reponse.status == 401){
                 error.value = 'The login or the password is incorrect'
             }
         }
@@ -67,19 +67,25 @@ async function onSubmit(){
 
 async function onSignup() {
     error.value = null
+    if (userPwd.value !== userPwdConfirm.value) {
+        error.value = 'The passwords do not match'
+        return
+    }
     try {
-        const reponse = await fetch('https://tetrisvs-api.vercel.app/login', {
+        const reponse = await fetch('https://tetrisvs-api.vercel.app/users', {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pseudo: userLogin.value, pwd: userPwd.value })
         })
         if (reponse.ok) {
-            const data = await reponse.json()
+            await onSubmit()
         } else {
-            console.log('status :', reponse.status)
-            if (response.status == 401){
-                error.value = 'The login or the password is incorrect'
+                        console.log('status :', reponse.status)
+            if (reponse.status == 400) {
+                error.value = 'Please fill in all fields'
+            } else {
+                error.value = 'Could not create the account (pseudo already taken?)'
             }
         }
     } catch (e) {
