@@ -13,6 +13,11 @@ router.get('/', requireAuth, (req, res) => {
   res.json({ user_id: req.user.user_id });
 });
 
+router.delete('/', (req, res) => {
+  res.clearCookie('token', { httpOnly: true, secure: true, sameSite: 'none' });
+  res.sendStatus(204);
+});
+
 router.post('/',async(req,res)=>{
     const {pseudo,pwd}=req.body;
     //return res.status(501).json({error:`psudo : ${pseudo} pwd ${pwd}`});
