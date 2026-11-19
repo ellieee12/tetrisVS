@@ -27,6 +27,7 @@ import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";
 import {joinRoom} from "@trystero-p2p/ws-relay";
 import Stats from './Stats.vue';
 
+/* for statistics */
 defineProps({ user_id: Number });
 const statsRef = ref(null); //pour pouvoir appeler la méthode = updateStats
 
