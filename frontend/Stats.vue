@@ -5,7 +5,7 @@
         <small> Played Games </small> <b>{{ nb_played_games }}</b>
     </div>
     <div class="box">
-        <small> Wins </small> <b>{{ nb_win }}</b>
+        <small> Multiplayer win </small> <b>{{ nb_win }}</b>
     </div>
     <div class="box">
         <small> Best Score </small> <b>{{ best_score }}</b>
@@ -29,7 +29,7 @@ async function showStats() {
       credentials: 'include'
     })
     if (!response.ok) {
-        console.log("PROBLEMEMEME")
+        console.log("Impossible to fetch user")
         return
     }
     const user = await response.json()
@@ -40,6 +40,36 @@ async function showStats() {
     console.error(e)
   }
 }
+
+async function updateStats({won, score}) {
+  console.log('Stats reçoit user_id =', props.user_id)
+  try {
+    //On utilise Patch plutot que put car sinon necessite password 
+    const response = await fetch(`http://localhost:3000/users/${props.user_id}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nb_played_games: nb_played_games.value + 1,
+      nb_win: nb_win.value + (won ? 1 : 0),
+      best_score: Math.max(best_score.value, score)
+    })
+  })
+  if (!response.ok) {
+      console.log('status PATCH :', response.status)
+      return
+  }
+      const user = await response.json()
+      nb_played_games.value = user.nb_played_games
+      nb_win.value = user.nb_win
+      best_score.value = user.best_score
+  } catch (e) {
+      console.error(e)
+  }
+}
+
 onMounted(showStats)
 
+//Pour que jeu puisse accèder à updateStats
+defineExpose({ updateStats })
 </script>

@@ -1,7 +1,7 @@
 <!-- src/Jeu.vue -->
 <template>
     <div class="tetris">
-        <Stats :user_id="user_id"/>
+        <Stats ref="statsRef" :user_id="user_id"/>
         <canvas ref="canvasRef" :width="WIDTH * UNITS" :height="HEIGHT * UNITS"></canvas>
 
         <aside>
@@ -27,7 +27,8 @@ import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";
 import {joinRoom} from "trystero";
 import Stats from './Stats.vue';
 
-const props = defineProps({ user_id: Number });
+defineProps({ user_id: Number });
+const statsRef = ref(null); //pour pouvoir appeler la méthode = updateStats
 
 /* congfig */
 const UNITS = 30;
@@ -63,6 +64,7 @@ let board = Array.from({length: HEIGHT}, () => Array(WIDTH).fill(null));
 let nextType = randomType();
 let piece;
 let over = "";
+let saved = false; 
 
 const cellsOf = p => p.shape.flatMap((row, r) => row.flatMap((v, c) => (v ? [{x: p.x + c, y: p.y + r}] : [])));
 const isValid = p => cellsOf(p).every(({x, y}) => x >= 0 && x < WIDTH && y < HEIGHT && !board[y][x]);
@@ -177,6 +179,7 @@ function start() {
   score.value = lines.value = 0;
   level.value = 1;
   over = "";
+  saved = false;
   spawn();
   tick();
 }
@@ -184,6 +187,7 @@ function start() {
 let seq = 0; 
 function sync() {
   draw();
+  saveIfOver();
   const frame = ++seq; //sequence, car sinnon une image ancienne peut arrivé avant une autre
   canvasRef.value.toBlob(blob => frame === seq && stateAction?.send(blob, {metadata: {over}}), "image/webp", 1); //webp pour éviter de prendre 24mb/s de connexion internet
 }
@@ -232,12 +236,21 @@ function join() {
   };
   room.onPeerLeave = () => {
     status.value = "Opponent left";
-    if (!over) {over = "You win!"; draw();}
+    if (!over) {over = "You win!"; saveIfOver(); draw();}
   };
   stateAction.onMessage = (data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
     oppImg.value = URL.createObjectURL(new Blob([data], {type: "image/webp"}));
     if (metadata.over && !over) {over = "You win!"; sync();}
   };
+}
+
+function saveIfOver() {
+  if (!over || saved) return;
+  saved = true;
+  statsRef.value?.updateStats({
+    won: over === "You win!",
+    score: score.value
+  });
 }
 </script>
