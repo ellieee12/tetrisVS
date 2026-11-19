@@ -25,13 +25,13 @@ aside {
   background: #262930;
   border-radius: 6px;
   padding: 10px 12px;
-}
-.box small {
-  display: block;
-  color: #9a9ca3;
-}
-.box b {
-  font-size: 1.5rem;
+  & small {
+    display: block;
+    color: #9a9ca3;
+  }
+  & b {
+    font-size: 1.5rem;
+  }
 }
 
 /* PAGE LOGIN */
