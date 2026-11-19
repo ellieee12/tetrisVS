@@ -24,7 +24,7 @@
 
 <script setup>
 import {ref, onMounted, onUpdated, onBeforeUnmount} from "vue";
-import {joinRoom} from "trystero";
+import {joinRoom} from "@trystero-p2p/ws-relay";
 import Stats from './Stats.vue';
 
 defineProps({ user_id: Number });
