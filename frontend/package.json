@@ -25,12 +25,14 @@
   "contributors": [],
   "scripts": {
     "dev": "vite",
-    "test": ""
+    "test": "",
+    "deploy": "vercel deploy --prod"
   },
   "dependencies": {
+    "@trystero-p2p/ws-relay": "^0.27.0",
     "@vitejs/plugin-vue": "^6.0.10",
     "express": "^5.3.0",
-    "trystero": "^0.26.0",
+    "trystero": "^0.27.0",
     "vite": "^8.3.4",
     "vue": "^3.5.43"
   }

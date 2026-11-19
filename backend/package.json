@@ -28,11 +28,13 @@
     "dev": "npm run db:reset && nodemon app.js",
     "test": "",
     "postinstall": "prisma generate",
-    "build": "prisma generate"
+    "build": "prisma generate",
+    "deploy": "vercel deploy --prod"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@trystero-p2p/ws-relay": "^0.27.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.6",
@@ -41,6 +43,7 @@
     "nodemon": "^3.1.14",
     "pg": "^8.23.1",
     "prisma": "^7.10.0",
-    "trystero": "^0.26.0"
+    "trystero": "^0.26.0",
+    "ws": "^8.23.0"
   }
 }
