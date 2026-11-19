@@ -272,10 +272,11 @@ function join() {
   stateAction.onMessage((data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
     URL.revokeObjectURL(oppNextImg.value);
-    data.slice(0, 4).arrayBuffer().then(headerBuf => {
+    const packed = data instanceof Blob ? data : new Blob([data]);
+    packed.slice(0, 4).arrayBuffer().then(headerBuf => {
       const blob1Size = new Uint32Array(headerBuf)[0];
-      oppImg.value = URL.createObjectURL(data.slice(4, 4 + blob1Size, "image/webp"));
-      oppNextImg.value = URL.createObjectURL(data.slice(4 + blob1Size, data.size, "image/webp"));
+      oppImg.value = URL.createObjectURL(packed.slice(4, 4 + blob1Size, "image/webp"));
+      oppNextImg.value = URL.createObjectURL(packed.slice(4 + blob1Size, packed.size, "image/webp"));
     });
     scoreVS.value = metadata.score;
     linesVS.value = metadata.lines;
