@@ -2,8 +2,16 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../db/prisma.js';
 import util from "node:util";
+import requireAuth from '../middlewares/auth.js';
+import cookieParser from 'cookie-parser';
 
 const router = express.Router();
+
+router.use(cookieParser());
+
+router.get('/', requireAuth, (req, res) => {
+  res.json({ user_id: req.user.user_id });
+});
 
 router.post('/',async(req,res)=>{
     const {pseudo,pwd}=req.body;
