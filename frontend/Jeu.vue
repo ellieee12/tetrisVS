@@ -19,6 +19,15 @@
         </aside>
 
         <img v-if="oppImg" :src="oppImg" :width="WIDTH * UNITS" :height="HEIGHT * UNITS">
+        <aside v-if="oppImg">
+            <div class="box"><small>Score</small><b>{{scoreVS}}</b></div>
+            <div class="box"><small>Lines</small><b>{{linesVS}}</b></div>
+            <div class="box"><small>Level</small><b>{{levelVS}}</b></div>
+            <div class="box">
+                <small>Next</small>
+                <canvas ref="nextRef" :width="NEXT_UNITS * 4" :height="NEXT_UNITS * 4"></canvas>
+            </div>
+        </aside>
   </div>
 </template>
 
@@ -191,7 +200,10 @@ function sync() {
   draw();
   saveIfOver();
   const frame = ++seq; //sequence, car sinnon une image ancienne peut arrivé avant une autre
-  canvasRef.value.toBlob(blob => frame === seq && stateAction?.send(blob, {metadata: {over}}), "image/webp", 1); //webp pour éviter de prendre 24mb/s de connexion internet
+  const toBuffer = canvas => new Promise(res => canvas.toBlob(b => b.arrayBuffer().then(res), "image/webp", 1)); //webp pour éviter de prendre 24mb/s de connexion internet
+  Promise.all([toBuffer(canvasRef.value), toBuffer(nextRef.value)]).then(([img, nextImg]) => {
+    if (frame === seq && stateAction) stateAction.send({img, nextImg}, {metadata: {over, score, lines, level}});
+  });
 }
 
 function addGarbage(n) {
@@ -211,6 +223,10 @@ function addGarbage(n) {
 const code = ref("");
 const status = ref("Pick a mode");
 const oppImg = ref("");
+const oppNextImg = ref("");
+const scoreVS = ref("");
+const linesVS = ref("");
+const levelVS = ref("");
 let room, stateAction, garbageAction;
 
 function leave() {
@@ -230,12 +246,14 @@ function join() {
   const name = code.value.trim() || "default";
   status.value = `Room "${name}": waiting for an opponent...`;
 
-  let busyUntil = 0;
   room = joinRoom({
     appId: "tetris-vs",
     maxUsers: 2,
   }, name);
-  room.onError(err => console.error(err.code, err.message));
+  room.onError(err =>  {
+    if (err.code = "room-full") status.value = "⚠ Room full! ⚠"
+    console.error(err.code, err.message)
+  });
   room.onUserJoin(() => {
     status.value = "Versus: last one standing wins";
     start();
@@ -251,7 +269,12 @@ function join() {
   stateAction = room.makeAction("state");
   stateAction.onMessage((data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
-    oppImg.value = URL.createObjectURL(new Blob([data], {type: "image/webp"}));
+    URL.revokeObjectURL(oppNextImg.value);
+    oppImg.value = URL.createObjectURL(new Blob([data.img], {type: "image/webp"}));
+    oppNextImg.value = URL.createObjectURL(new Blob([data.nextImg], {type: "image/webp"}));
+    scoreVS.value = metadata.score;
+    linesVS.value = metadata.lines;
+    levelVS.value = metadata.level;
     if (metadata.over && !over) {over = "You win!"; sync();}
   });
 }
