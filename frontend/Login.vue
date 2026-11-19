@@ -1,28 +1,48 @@
 <!-- src/Login.vue -->
 <template>
   <div class="login">
-    <form @submit.prevent>
+
+    <!-- LOG IN-->
+    <form v-if="hasAccount" @submit.prevent>
         <p>Login : </p>
         <input type="text" v-model="userLogin" />
         <p> Password :</p>
         <input type="password" v-model="userPwd" />
 
-        <button v-on:click="onSubmit">Log in</button>
+        <button type="button" v-on:click="onSubmit"> Log in </button>
+        <button type="button" @click="hasAccount = false"> Sign up </button>
     </form>
-    <p v-if="erreur">{{ erreur }}</p>
+
+    <!-- SIGN UP-->
+    <form v-else @submit.prevent>
+        <p>Login : </p>
+        <input type="text" v-model="userLogin" />
+        <p> Password :</p>
+        <input type="password" v-model="userPwd" />
+        <p> Confirm password :</p>
+        <input type="password" v-model="userPwdConfirm" />
+
+        <button type="button" @click="onSignup"> Sign up </button>
+        <button type="button" @click="hasAccount = true"> You already have an account </button>
+    </form>
+    <p v-if="error">{{ error }}</p>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
-const userLogin = ref('') //sont utilisées apres pour récupérer les valeurs
+const userLogin = ref('')
 const userPwd = ref('')
-const erreur = ref(null)
+
+const hasAccount = ref(true)  
+const userPwdConfirm = ref('') 
+
+const error = ref(null)
 const emit = defineEmits(['authentified'])
 
 async function onSubmit(){
-    erreur.value = null
+    error.value = null
     try {
         const reponse = await fetch('https://tetrisvs-api.vercel.app/login', {
             method: 'POST',
@@ -35,11 +55,36 @@ async function onSubmit(){
             emit('authentified', data.user_id)
         } else {
             console.log('status :', reponse.status)
-            erreur.value = 'The login or the password is incorrect'
+            if (response.status == 401){
+                error.value = 'The login or the password is incorrect'
+            }
         }
     } catch (e) {
         console.error(e)
-        erreur.value = 'Sorry :( The server encountered a problem'
+        error.value = 'Sorry :( The server encountered a problem'
+    }
+}
+
+async function onSignup() {
+    error.value = null
+    try {
+        const reponse = await fetch('https://tetrisvs-api.vercel.app/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pseudo: userLogin.value, pwd: userPwd.value })
+        })
+        if (reponse.ok) {
+            const data = await reponse.json()
+        } else {
+            console.log('status :', reponse.status)
+            if (response.status == 401){
+                error.value = 'The login or the password is incorrect'
+            }
+        }
+    } catch (e) {
+        console.error(e)
+        error.value = 'Sorry :( The server encountered a problem'
     }
 }
 </script>
