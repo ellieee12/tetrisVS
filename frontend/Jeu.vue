@@ -100,6 +100,7 @@ function lock() {
     score.value += LINE_SCORES[cleared - 1] * level.value;
     lines.value += cleared;
     level.value = 1 + Math.floor(lines.value / LINES_PER_LEVEL);
+    garbageAction?.send(cleared);
   }
   spawn();
 }
@@ -193,15 +194,28 @@ function sync() {
   canvasRef.value.toBlob(blob => frame === seq && stateAction?.send(blob, {metadata: {over}}), "image/webp", 1); //webp pour éviter de prendre 24mb/s de connexion internet
 }
 
+function addGarbage(n) {
+  if (!piece || over) return;
+  for (let i = 0; i < Math.min(n, 4) && !over; i++) {
+    if (board[0].some(Boolean)) over = "Game over";
+    board.shift();
+    const hole = Math.floor(Math.random() * WIDTH);
+    board.push(Array.from({length: WIDTH}, (_, x) => (x === hole ? null : "white")));
+    if (!isValid(piece)) piece = {...piece, y: piece.y - 1};
+    if (cellsOf(piece).some(c => c.y < 0)) over = "Game over";
+  }
+  sync();
+}
+
 /* modes */
 const code = ref("");
 const status = ref("Pick a mode");
 const oppImg = ref("");
-let room, stateAction;
+let room, stateAction, garbageAction;
 
 function leave() {
   room?.leave();
-  room = stateAction = null;
+  room = stateAction = garbageAction = null;
   oppImg.value = "";
 }
 
@@ -230,6 +244,9 @@ function join() {
     status.value = "Opponent left";
     if (!over) {over = "You win!"; draw();}
   });
+
+  garbageAction = room.makeAction("garbage");
+  garbageAction.onMessage(addGarbage);
 
   stateAction = room.makeAction("state");
   stateAction.onMessage((data, {metadata}) => {
