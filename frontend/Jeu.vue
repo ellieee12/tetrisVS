@@ -15,7 +15,7 @@
             <button @click="solo">Play solo</button>
             <input v-model="code" placeholder="room code" size="1">
             <button @click="join">Join room</button>
-            <div class="info">{{status}}</div>
+            <div id="info">{{status}}</div>
         </aside>
 
         <img v-if="oppImg" :src="oppImg" :width="WIDTH * UNITS" :height="HEIGHT * UNITS">
@@ -202,7 +202,9 @@ function sync() {
   const frame = ++seq; //sequence, car sinnon une image ancienne peut arrivé avant une autre
   const toBuffer = canvas => new Promise(res => canvas.toBlob(b => b.arrayBuffer().then(res), "image/webp", 1)); //webp pour éviter de prendre 24mb/s de connexion internet
   Promise.all([toBuffer(canvasRef.value), toBuffer(nextRef.value)]).then(([img, nextImg]) => {
-    if (frame === seq && stateAction) stateAction.send({img, nextImg}, {metadata: {over, score: score.value, lines: lines.value, level:  level.value}});
+    const header = new Uint32Array([img.size]);
+    const packedBlob = new Blob([header, img, nextImg]);
+    if (frame === seq && stateAction) stateAction.send({packedBlob}, {metadata: {over, score: score.value, lines: lines.value, level:  level.value}});
   });
 }
 
@@ -270,8 +272,11 @@ function join() {
   stateAction.onMessage((data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
     URL.revokeObjectURL(oppNextImg.value);
-    oppImg.value = URL.createObjectURL(new Blob([data.img], {type: "image/webp"}));
-    oppNextImg.value = URL.createObjectURL(new Blob([data.nextImg], {type: "image/webp"}));
+    data.slice(0, 4).arrayBuffer().then(headerBuf => {
+      const blob1Size = new Uint32Array(headerBuf)[0];
+      oppImg.value = URL.createObjectURL(data.slice(4, 4 + blob1Size, "image/webp"));
+      oppNextImg.value = URL.createObjectURL(data.slice(4 + blob1Size, data.size, "image/webp"));
+    });
     scoreVS.value = metadata.score;
     linesVS.value = metadata.lines;
     levelVS.value = metadata.level;
