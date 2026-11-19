@@ -3,6 +3,8 @@ import users from './routes/users.js';
 import login from './routes/login.js';
 import cors from 'cors';
 
+import { createServer } from "node:http";
+import { createWsRelayServer } from "@trystero-p2p/ws-relay/server";
 const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
@@ -11,10 +13,19 @@ app.use(express.json());
 app.use("/users/",users);
 app.use("/login/",login);
 
-app.listen(3000,()=>{
+const server = createServer(app);
+const relay = createWsRelayServer({
+    server,
+    path: "/relay"
+});
+
+await relay.ready;
+
+server.listen(3000, () => {
+    console.log("Express + Trystero WS relay running");
     console.log('Listening on port 3000');
     const u = new URL(process.env.DATABASE_URL);
-console.log("DB host:", u.hostname, "port:", u.port);
-})
+    console.log("DB host:", u.hostname, "port:", u.port);
+});
 
 export default app
