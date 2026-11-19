@@ -25,7 +25,8 @@
   "contributors": [],
   "scripts": {
     "dev": "vite",
-    "test": ""
+    "test": "",
+    "deploy":"vercel deploy --prod"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^6.0.10",

@@ -28,7 +28,8 @@
     "dev": "npm run db:reset && nodemon app.js",
     "test": "",
     "postinstall": "prisma generate",
-    "build": "prisma generate"
+    "build": "prisma generate",
+    "deploy":"vercel deploy --prod"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
