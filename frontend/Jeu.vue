@@ -25,7 +25,7 @@
             <div class="box"><small>Level</small><b>{{levelVS}}</b></div>
             <div class="box">
                 <small>Next</small>
-                <canvas ref="nextRef" :width="NEXT_UNITS * 4" :height="NEXT_UNITS * 4"></canvas>
+                <img :src="oppNextImg" :width="NEXT_UNITS * 4" :height="NEXT_UNITS * 4">
             </div>
         </aside>
   </div>
@@ -200,11 +200,9 @@ function sync() {
   draw();
   saveIfOver();
   const frame = ++seq; //sequence, car sinnon une image ancienne peut arrivé avant une autre
-  const toBuffer = canvas => new Promise(res => canvas.toBlob(b => b.arrayBuffer().then(res), "image/webp", 1)); //webp pour éviter de prendre 24mb/s de connexion internet
-  Promise.all([toBuffer(canvasRef.value), toBuffer(nextRef.value)]).then(([img, nextImg]) => {
-    const header = new Uint32Array([img.size]);
-    const packedBlob = new Blob([header, img, nextImg]);
-    if (frame === seq && stateAction) stateAction.send({packedBlob}, {metadata: {over, score: score.value, lines: lines.value, level:  level.value}});
+  const toBlob = canvas => new Promise(res => canvas.toBlob(res, "image/webp", 1)); //webp pour éviter de prendre 24mb/s de connexion internet
+  Promise.all([toBlob(canvasRef.value), toBlob(nextRef.value)]).then(([img, nextImg]) => {
+    if (frame === seq && stateAction) stateAction.send(new Blob([img, nextImg]), {metadata: {size: img.size, over, score: score.value, lines: lines.value, level: level.value}});
   });
 }
 
@@ -234,7 +232,7 @@ let room, stateAction, garbageAction;
 function leave() {
   room?.leave();
   room = stateAction = garbageAction = null;
-  oppImg.value = "";
+  oppImg.value = oppNextImg.value = "";
 }
 
 function solo() {
@@ -272,12 +270,9 @@ function join() {
   stateAction.onMessage((data, {metadata}) => {
     URL.revokeObjectURL(oppImg.value);
     URL.revokeObjectURL(oppNextImg.value);
-    const packed = data instanceof Blob ? data : new Blob([data]);
-    packed.slice(0, 4).arrayBuffer().then(headerBuf => {
-      const blob1Size = new Uint32Array(headerBuf)[0];
-      oppImg.value = URL.createObjectURL(packed.slice(4, 4 + blob1Size, "image/webp"));
-      oppNextImg.value = URL.createObjectURL(packed.slice(4 + blob1Size, packed.size, "image/webp"));
-    });
+    const packed = new Blob([data]);
+    oppImg.value = URL.createObjectURL(packed.slice(0, metadata.size, "image/webp"));
+    oppNextImg.value = URL.createObjectURL(packed.slice(metadata.size, packed.size, "image/webp"));
     scoreVS.value = metadata.score;
     linesVS.value = metadata.lines;
     levelVS.value = metadata.level;
